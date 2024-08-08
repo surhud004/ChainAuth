@@ -1,4 +1,4 @@
-# ChainAuth
+# ChainAuth [![Netlify Status](https://api.netlify.com/api/v1/badges/3a338f33-b2e8-4cf1-b460-8de35c103589/deploy-status)](https://app.netlify.com/sites/chain-auth/deploys)
 
 Blockchain-based authentication using your Ethereum wallet via Metamask.
 
