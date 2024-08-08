@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import { useSDK } from '@metamask/sdk-react';
 import { Colors } from '../ui/theme/colors';
 import MetamaskIcon from '../assets/Metamask';
+import { verifyMessage } from 'ethers';
 
 const Login = () => {
   const { setAuthenticated, setUserAccount } = useContext(AuthContext);
@@ -29,7 +30,10 @@ const Login = () => {
         method: 'personal_sign',
         params: [msg, from]
       });
-      return sign;
+      return {
+        msg: siweMessage,
+        signature: sign
+      };
     } catch (err) {
       console.error(err);
       throw err;
@@ -48,16 +52,35 @@ const Login = () => {
     }
   };
 
+  const verifySignature = async (account: string, message: string, signature: string) => {
+    try {
+      const signedPubKey = verifyMessage(message, signature);
+      if (signedPubKey.toLowerCase() === account.toLowerCase()) {
+        return true;
+      } else {
+        return false;
+      }
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
   const handleMetamaskSignIn = async (e: any) => {
     e.preventDefault();
     try {
       const account = await connect();
       const response = await siweSign(account);
-      localStorage.setItem('account', account);
-      response && localStorage.setItem('signed', response as string);
-      setAuthenticated(true);
-      setUserAccount(account);
-      navigate('/dashboard');
+      const isVerified = await verifySignature(account, response.msg, response.signature as string);
+      if (isVerified) {
+        localStorage.setItem('account', account);
+        response && localStorage.setItem('signed', response.signature as string);
+        setAuthenticated(true);
+        setUserAccount(account);
+        navigate('/dashboard');
+      } else {
+        setError('Invalid signature');
+      }
     } catch (e: any) {
       if (e.code === 4001) {
         setError(e.message);

@@ -19,7 +19,7 @@ const Dashboard: React.FC = (props: Props) => {
 
   useEffect(() => {
     let signedMessage = localStorage.getItem('signed');
-    signedMessage && setSuccess(`Login successful! Signed: ${signedMessage}`);
+    signedMessage && setSuccess(`Login successful! Verified Signature: ${signedMessage}`);
     if (window.ethereum && window.ethereum.isMetaMask) {
       const handleAccountsChanged = () => {
         localStorage.removeItem('account');
