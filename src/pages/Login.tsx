@@ -7,6 +7,17 @@ import { useSDK } from '@metamask/sdk-react';
 import { Colors } from '../ui/theme/colors';
 import MetamaskIcon from '../assets/Metamask';
 import { verifyMessage } from 'ethers';
+import {
+  isConnected,
+  isAllowed,
+  signMessage,
+  setAllowed,
+  requestAccess,
+  getNetwork,
+  getAddress
+} from '@stellar/freighter-api';
+import { Keypair } from '@stellar/stellar-sdk';
+import * as nacl from 'tweetnacl';
 
 const Login = () => {
   const { setAuthenticated, setUserAccount } = useContext(AuthContext);
@@ -88,6 +99,116 @@ const Login = () => {
     }
   };
 
+  const freighterRetrieveNetwork = async () => {
+    const networkObj = await getNetwork();
+
+    if (networkObj.error) {
+      return networkObj.error;
+    } else {
+      return {
+        network: networkObj.network,
+        networkPassphrase: networkObj.networkPassphrase
+      };
+    }
+  };
+
+  const freighterConnect = async () => {
+    try {
+      // check freighter installed
+      const connected = await isConnected();
+      if (!connected.isConnected) {
+        throw new Error('Freighter not installed');
+      }
+      // check freighter allowed
+      const allowed = await isAllowed();
+      if (!allowed.isAllowed) {
+        // allow freighter access permissions
+        const allow = await setAllowed();
+        if (!allow.isAllowed) {
+          throw new Error('User denied connection permissions');
+        } else {
+          // retrieve address
+          const accessObj = await requestAccess();
+
+          if (accessObj.error) {
+            return accessObj.error;
+          } else {
+            return accessObj.address;
+          }
+        }
+      } else {
+        // already permissions, retrieve address
+        const addressObj = await getAddress();
+
+        if (addressObj.error) {
+          return addressObj.error;
+        } else {
+          return addressObj.address;
+        }
+      }
+    } catch (err: any) {
+      console.warn('failed to connect..', err);
+      throw err;
+    }
+  };
+
+  const siwsSign = async (account: string) => {
+    try {
+      const domain = window.location.host;
+      const from = account;
+      const network = await freighterRetrieveNetwork();
+      const siwsMessage = `${domain} wants you to sign in with your Stellar account:\n${from}\n\nURI: https://${domain}\n\nNETWORK: ${
+        network.network
+      }\n\nIssued At: ${new Date().toISOString()}`;
+      const signedMessage = await signMessage(siwsMessage);
+      if (signedMessage.error) {
+        throw signedMessage.error;
+      }
+      return {
+        message: siwsMessage,
+        signedMessage: Buffer.from(signedMessage.signedMessage ?? '').toString('hex'),
+        address: signedMessage.signerAddress
+      };
+    } catch (error) {
+      console.error('Error signing message:', error);
+      throw error;
+    }
+  };
+
+  const freighterVerifySignature = (account: string, signerAddress: string) => {
+    try {
+      // todo improve verification logic - freighter returns signed message instead of signature
+      // const isValid = nacl.sign.open(account, signedMessage);
+      return account === signerAddress;
+    } catch (err) {
+      console.error(err);
+      throw err;
+    }
+  };
+
+  const handleFreighterSignIn = async (e: any) => {
+    try {
+      e.preventDefault();
+      const account = await freighterConnect();
+      const response = await siwsSign(account);
+      const isVerified = freighterVerifySignature(account, response.address);
+      if (isVerified) {
+        // todo add network, XLM to local storage for dashboard display
+        localStorage.setItem('account', account);
+        response && localStorage.setItem('signed', response.signedMessage);
+        setAuthenticated(true);
+        setUserAccount(account);
+        navigate('/dashboard');
+      } else {
+        setError('Invalid signature');
+      }
+    } catch (e: any) {
+      if (e.code === -4) {
+        setError(e.message);
+      }
+    }
+  };
+
   return (
     <>
       <Header />
@@ -120,6 +241,19 @@ const Login = () => {
               startIcon={<MetamaskIcon />}
             >
               Login with Metamask
+            </Button>
+          </form>
+          {/** todo update icon, colors and add freighter app logo */}
+          <form onSubmit={handleFreighterSignIn} style={{ width: '100%', marginTop: 1 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{ marginTop: 2, color: Colors.font }}
+              startIcon={<MetamaskIcon />}
+            >
+              Login with Freighter
             </Button>
           </form>
         </Paper>

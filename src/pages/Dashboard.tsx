@@ -60,9 +60,11 @@ const Dashboard: React.FC = (props: Props) => {
             Welcome, {userAccount.substring(0, 4) + `...` + userAccount.substring(userAccount.length - 4)}!
           </Typography>
           <Typography component="h4" variant="subtitle1" sx={{ margin: '10px' }} color={Colors.white}>
+            {/** todo add asset symbol from local storage ETH, XLM etc. */}
             Account Balance: {balance && parseInt(balance, 16) / 1000000000000000000} ETH
           </Typography>
           <Typography component="h4" variant="subtitle1" sx={{ margin: '10px' }} color={Colors.white}>
+            {/** todo network from local storage */}
             Network: {chainId && getNetworkName(parseInt(chainId, 16))}
           </Typography>
         </Paper>
