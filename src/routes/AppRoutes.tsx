@@ -3,11 +3,12 @@ import { Routes as Router, Route, Outlet, Navigate } from 'react-router-dom';
 import { AuthContext } from '../common/context/AuthContext';
 import Login from '../pages/Login';
 import Dashboard from '../pages/Dashboard';
+import { getStore } from '../common/api';
 
 const PrivateRoutes = () => {
   const { authenticated } = useContext(AuthContext);
 
-  if (!authenticated || localStorage.getItem('account') === null) return <Navigate to="/" replace />;
+  if (!authenticated || getStore('account') === null) return <Navigate to="/" replace />;
 
   return <Outlet />;
 };
