@@ -5,21 +5,51 @@ import { Container, Paper, Typography, Alert } from '@mui/material';
 import { AuthContext } from '../common/context/AuthContext';
 import { Colors } from '../ui/theme/colors';
 import { useSDK } from '@metamask/sdk-react';
-import { getNetworkName } from '../helpers/networkName';
+import * as StellarSdk from '@stellar/stellar-sdk';
 
 type Props = {};
 
 const Dashboard: React.FC = (props: Props) => {
   const { userAccount, setAuthenticated, setUserAccount } = useContext(AuthContext);
-  const { chainId, balance } = useSDK();
+  const { balance } = useSDK();
   const [success, setSuccess] = useState('');
+  const [calcBalance, setCalcBalance] = useState('');
   const navigate = useNavigate();
 
+  const network = localStorage.getItem('network');
+  const nativeAsset = localStorage.getItem('native');
+  const server = new StellarSdk.Horizon.Server(
+    network === 'TESTNET' ? 'https://horizon-testnet.stellar.org' : 'https://horizon.stellar.org'
+  );
+
   window.Buffer = window.Buffer || require('buffer').Buffer;
+
+  const fetchStellarNativeBalance = async () => {
+    try {
+      const account = await server.loadAccount(userAccount);
+      return account.balances[0].balance;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const getBalance = async () => {
+    let calcBalance = 0;
+    if (nativeAsset === 'ETH') {
+      calcBalance = balance ? parseInt(balance, 16) / 1000000000000000000 : 0;
+    } else if (nativeAsset === 'XLM') {
+      calcBalance = Number(await fetchStellarNativeBalance());
+    }
+    setCalcBalance(`${calcBalance} ${nativeAsset}`);
+  };
 
   useEffect(() => {
     let signedMessage = localStorage.getItem('signed');
     signedMessage && setSuccess(`Login successful! Verified Signature: ${signedMessage}`);
+    const fetchBalance = async () => {
+      await getBalance();
+    };
+    fetchBalance();
     if (window.ethereum && window.ethereum.isMetaMask) {
       const handleAccountsChanged = () => {
         localStorage.removeItem('account');
@@ -60,12 +90,10 @@ const Dashboard: React.FC = (props: Props) => {
             Welcome, {userAccount.substring(0, 4) + `...` + userAccount.substring(userAccount.length - 4)}!
           </Typography>
           <Typography component="h4" variant="subtitle1" sx={{ margin: '10px' }} color={Colors.white}>
-            {/** todo add asset symbol from local storage ETH, XLM etc. */}
-            Account Balance: {balance && parseInt(balance, 16) / 1000000000000000000} ETH
+            Account Balance: {calcBalance}
           </Typography>
           <Typography component="h4" variant="subtitle1" sx={{ margin: '10px' }} color={Colors.white}>
-            {/** todo network from local storage */}
-            Network: {chainId && getNetworkName(parseInt(chainId, 16))}
+            Network: {network}
           </Typography>
         </Paper>
       </Container>

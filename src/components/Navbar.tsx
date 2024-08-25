@@ -14,6 +14,9 @@ const Navbar: React.FC = () => {
   const handleLogout = (e: any) => {
     e.preventDefault();
     localStorage.removeItem('account');
+    localStorage.removeItem('network');
+    localStorage.removeItem('native');
+    localStorage.removeItem('signed');
     setAuthenticated(false);
     setUserAccount('');
     navigate('/');

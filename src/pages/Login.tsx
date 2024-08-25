@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import { useSDK } from '@metamask/sdk-react';
 import { Colors } from '../ui/theme/colors';
 import MetamaskIcon from '../assets/Metamask';
+import FreighterIcon from '../assets/Freighter';
 import { verifyMessage } from 'ethers';
 import {
   isConnected,
@@ -18,6 +19,7 @@ import {
 } from '@stellar/freighter-api';
 import { Keypair } from '@stellar/stellar-sdk';
 import * as nacl from 'tweetnacl';
+import { getNetworkName } from '../helpers/networkName';
 
 const Login = () => {
   const { setAuthenticated, setUserAccount } = useContext(AuthContext);
@@ -85,6 +87,8 @@ const Login = () => {
       const isVerified = await verifySignature(account, response.msg, response.signature as string);
       if (isVerified) {
         localStorage.setItem('account', account);
+        localStorage.setItem('network', chainId ? getNetworkName(parseInt(chainId, 16)) : '');
+        localStorage.setItem('native', 'ETH');
         response && localStorage.setItem('signed', response.signature as string);
         setAuthenticated(true);
         setUserAccount(account);
@@ -99,16 +103,13 @@ const Login = () => {
     }
   };
 
-  const freighterRetrieveNetwork = async () => {
+  const freighterRetrieveNetwork = async (): Promise<string> => {
     const networkObj = await getNetwork();
 
     if (networkObj.error) {
       return networkObj.error;
     } else {
-      return {
-        network: networkObj.network,
-        networkPassphrase: networkObj.networkPassphrase
-      };
+      return networkObj.network;
     }
   };
 
@@ -157,9 +158,7 @@ const Login = () => {
       const domain = window.location.host;
       const from = account;
       const network = await freighterRetrieveNetwork();
-      const siwsMessage = `${domain} wants you to sign in with your Stellar account:\n${from}\n\nURI: https://${domain}\n\nNETWORK: ${
-        network.network
-      }\n\nIssued At: ${new Date().toISOString()}`;
+      const siwsMessage = `${domain} wants you to sign in with your Stellar account:\n${from}\n\nURI: https://${domain}\n\nNETWORK: ${network}\n\nIssued At: ${new Date().toISOString()}`;
       const signedMessage = await signMessage(siwsMessage);
       if (signedMessage.error) {
         throw signedMessage.error;
@@ -193,8 +192,9 @@ const Login = () => {
       const response = await siwsSign(account);
       const isVerified = freighterVerifySignature(account, response.address);
       if (isVerified) {
-        // todo add network, XLM to local storage for dashboard display
         localStorage.setItem('account', account);
+        localStorage.setItem('network', await freighterRetrieveNetwork());
+        localStorage.setItem('native', 'XLM');
         response && localStorage.setItem('signed', response.signedMessage);
         setAuthenticated(true);
         setUserAccount(account);
@@ -243,7 +243,6 @@ const Login = () => {
               Login with Metamask
             </Button>
           </form>
-          {/** todo update icon, colors and add freighter app logo */}
           <form onSubmit={handleFreighterSignIn} style={{ width: '100%', marginTop: 1 }}>
             <Button
               type="submit"
@@ -251,7 +250,7 @@ const Login = () => {
               color="primary"
               fullWidth
               sx={{ marginTop: 2, color: Colors.font }}
-              startIcon={<MetamaskIcon />}
+              startIcon={<FreighterIcon />}
             >
               Login with Freighter
             </Button>
