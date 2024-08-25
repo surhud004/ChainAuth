@@ -17,8 +17,8 @@ import {
   getNetwork,
   getAddress
 } from '@stellar/freighter-api';
-import { Keypair } from '@stellar/stellar-sdk';
-import * as nacl from 'tweetnacl';
+// import { Keypair } from '@stellar/stellar-sdk';
+// import * as nacl from 'tweetnacl';
 import { getNetworkName } from '../helpers/networkName';
 
 const Login = () => {
