@@ -6,6 +6,7 @@ import { AuthContext } from '../common/context/AuthContext';
 import { Colors } from '../ui/theme/colors';
 import { Button } from '@mui/material';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { deleteStore } from '../common/api';
 
 const Navbar: React.FC = () => {
   const { setAuthenticated, setUserAccount, userAccount } = useContext(AuthContext);
@@ -13,10 +14,7 @@ const Navbar: React.FC = () => {
 
   const handleLogout = (e: any) => {
     e.preventDefault();
-    localStorage.removeItem('account');
-    localStorage.removeItem('network');
-    localStorage.removeItem('native');
-    localStorage.removeItem('signed');
+    deleteStore();
     setAuthenticated(false);
     setUserAccount('');
     navigate('/');

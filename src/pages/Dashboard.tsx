@@ -6,6 +6,7 @@ import { AuthContext } from '../common/context/AuthContext';
 import { Colors } from '../ui/theme/colors';
 import { useSDK } from '@metamask/sdk-react';
 import * as StellarSdk from '@stellar/stellar-sdk';
+import { deleteStore, getStore } from '../common/api';
 
 type Props = {};
 
@@ -16,8 +17,8 @@ const Dashboard: React.FC = (props: Props) => {
   const [calcBalance, setCalcBalance] = useState('');
   const navigate = useNavigate();
 
-  const network = localStorage.getItem('network');
-  const nativeAsset = localStorage.getItem('native');
+  const network = getStore('network');
+  const nativeAsset = getStore('native');
   const server = new StellarSdk.Horizon.Server(
     network === 'TESTNET' ? 'https://horizon-testnet.stellar.org' : 'https://horizon.stellar.org'
   );
@@ -44,7 +45,7 @@ const Dashboard: React.FC = (props: Props) => {
   };
 
   useEffect(() => {
-    let signedMessage = localStorage.getItem('signed');
+    let signedMessage = getStore('signed');
     signedMessage && setSuccess(`Login successful! Verified Signature: ${signedMessage}`);
     const fetchBalance = async () => {
       await getBalance();
@@ -52,7 +53,7 @@ const Dashboard: React.FC = (props: Props) => {
     fetchBalance();
     if (window.ethereum && window.ethereum.isMetaMask) {
       const handleAccountsChanged = () => {
-        localStorage.removeItem('account');
+        deleteStore();
         setAuthenticated(false);
         setUserAccount('');
         navigate('/');
